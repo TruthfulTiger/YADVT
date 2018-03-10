@@ -18,7 +18,7 @@ class db
         $this->dbc = null;
 
         try{
-            $this->dbc = new PDO('mysql:host=localhost;dbname=advweb1', "advweb1", "0HulBWOBZcVTdTG5", [PDO::ATTR_PERSISTENT => true]);
+            $this->dbc = new PDO('mysql:host=localhost:3307;dbname=tharbedragons', "advweb1", "0HulBWOBZcVTdTG5", [PDO::ATTR_PERSISTENT => true]);
         }catch(PDOException $exception){
             echo "Connection error: " . $exception->getMessage();
         }

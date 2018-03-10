@@ -11,6 +11,8 @@ namespace DesignPatterns\FactoryPattern;
 require_once 'db.inc.php';
 require_once 'ILoadDragons.php';
 require_once 'Dragon.php';
+require_once 'Sort.php';
+require_once 'PagingDragons.php';
 
 use \Main\db;
 
@@ -19,10 +21,12 @@ class LoadAllDragons extends Dragon implements ILoadDragons
 {
     // Attributes
     private $_sort;
+    private $_page;
 
     // Constructor
     public function __construct() {
         $this->_sort = new Sort();
+        $this->_page = new PagingDragons();
     }
 
     // Properties
@@ -34,32 +38,31 @@ class LoadAllDragons extends Dragon implements ILoadDragons
         return $this->_sort;
     }
 
+    /**
+     * @return PagingDragons
+     */
+    public function getPage(): PagingDragons
+    {
+        return $this->_page;
+    }
+
     // Methods
 
     public function loadDragons()
     {
         $db = db::GetInstance();
 
-        $count = "SELECT COUNT(*) AS TotalDragons FROM dragon AS d
-                JOIN dragontype AS t ON d.TypeID = t.TypeID
-                JOIN dragonelement AS de ON de.DragonID = d.DragonID
-                JOIN element AS e ON de.ElementID = e.ElementID
-                GROUP BY de.DragonID";
-
-    //    $this->_paging = $count;
-
-
+        $startingLimit = $this->_page->countDragons();
         $sortitem = $this->_sort->sortDragons();
-        $starting_limit = 0;
-        $limit = 12;
-
+        $limit = $this->_page->getLimit();
 
         $sql = "SELECT e.ElementName, e.ElementID, e.ElementNotes, GROUP_CONCAT(e.ElementIcon) as elements, d.*, de.*, t.* FROM dragon AS d 
                 JOIN dragontype AS t ON d.TypeID = t.TypeID
                 JOIN dragonelement AS de ON de.DragonID = d.DragonID
                 JOIN element AS e ON de.ElementID = e.ElementID
                 GROUP BY de.DragonID
-                ORDER BY $sortitem LIMIT $starting_limit, $limit";
+                ORDER BY $sortitem 
+                LIMIT $limit OFFSET $startingLimit";
 
         $query = $db -> dbc -> prepare($sql);
 
@@ -95,6 +98,7 @@ class LoadAllDragons extends Dragon implements ILoadDragons
                     $this->_elements = $data['elements'];
                     array_push($dragons, $data);
                 }
+                echo $this->_page->pageLinks();
             return $dragons;
         } else {
             echo "No results found.";

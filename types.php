@@ -6,124 +6,77 @@ $desc = "";
 
 require_once 'header.php';
 require_once 'db.inc.php';
+require_once 'LoadDragons.php';
+require_once 'FilterDragons.php';
+
+use \DesignPatterns\FactoryPattern\LoadDragons;
+use \DesignPatterns\FactoryPattern\FilterDragons;
 use \Main\db;
 
 $typename = db::TestInput($_GET['typename']);
 
 function loadDragons(){
-    $db = db::GetInstance();
     $typeid = db::TestInput($_GET['typeid']);
-    if (!empty($_GET['sort'])) {
-        $sort = db::TestInput($_GET['sort']);
-        switch ($sort) {
-            case 'ascdragons':
-                $sql = "SELECT * FROM dragon AS d 
-            JOIN dragontype AS t ON d.TypeID = t.TypeID
-            JOIN dragonelement AS de ON de.DragonID = d.DragonID
-            JOIN element AS e ON de.ElementID = e.ElementID
-            WHERE t.TypeID= :dtype ORDER BY d.DragonName";
-                break;
-            case 'descdragons':
-                $sql = "SELECT * FROM dragon AS d 
-            JOIN dragontype AS t ON d.TypeID = t.TypeID
-            JOIN dragonelement AS de ON de.DragonID = d.DragonID
-            JOIN element AS e ON de.ElementID = e.ElementID
-            WHERE t.TypeID= :dtype ORDER BY d.DragonName DESC ";
-                break;
-            case 'ascelement':
-                $sql = "SELECT * FROM dragon AS d 
-            JOIN dragontype AS t ON d.TypeID = t.TypeID
-            JOIN dragonelement AS de ON de.DragonID = d.DragonID
-            JOIN element AS e ON de.ElementID = e.ElementID
-            WHERE t.TypeID= :dtype ORDER BY e.ElementName";
-                break;
-            case 'descelement':
-                $sql = "SELECT * FROM dragon AS d 
-            JOIN dragontype AS t ON d.TypeID = t.TypeID
-            JOIN dragonelement AS de ON de.DragonID = d.DragonID
-            JOIN element AS e ON de.ElementID = e.ElementID
-            WHERE t.TypeID= :dtype ORDER BY e.ElementName DESC";
-                break;
-            default:
-                $sql = "SELECT * FROM dragon AS d 
-            JOIN dragontype AS t ON d.TypeID = t.TypeID
-            JOIN dragonelement AS de ON de.DragonID = d.DragonID
-            JOIN element AS e ON de.ElementID = e.ElementID
-            WHERE t.TypeID= :dtype ORDER BY d.DragonID";
-                break;
-        }
-    } else {
-        if ($_GET['typeid'] == 4 or $_GET['typeid'] == 5) {
-            $sql = "SELECT * FROM dragon AS d 
-                JOIN dragontype AS t ON d.TypeID = t.TypeID
-                WHERE t.TypeID= :dtype";
-        } else {
-            $sql = "SELECT * FROM dragon AS d 
-            JOIN dragontype AS t ON d.TypeID = t.TypeID
-            JOIN dragonelement AS de ON de.DragonID = d.DragonID
-            JOIN element AS e ON de.ElementID = e.ElementID
-            WHERE t.TypeID= :dtype ";
-        }
-    }
 
-    $query = $db -> dbc -> prepare($sql);
-    $query->bindParam(':dtype', $typeid);
+    $dragonlist = new LoadDragons();
 
-    $query -> execute();
+    $dragonlist->setOutput(new FilterDragons());
+    $dragons = (array)$dragonlist->loadOutput(); ?>
 
-    $query -> setFetchMode(PDO::FETCH_ASSOC); // [PDO::FETCH_NUM for integer key value]
-
-    $result = $query -> fetchAll();
-if ($result) {
-    foreach ($result as $r) {
-        ?>
-        <div class="col-md-4">
-            <div class="text-center">
-                <img class="eggImage" src="images/Dragons/<?php if ($r['EggImage'] != null) {
-                    echo $r['EggImage'];
-                } else {
-                    echo $r['AdultImage'];
-                } ?>"
-                     alt="<?php echo $r['DragonName'] . " egg"; ?>">
-                <h5><?php echo $r['DragonName']; ?></h5>
-            </div>
-            <?php if ($typeid == 4 or $typeid == 5) { ?>
-                <p><b>Unlock level:</b> <?php echo $r['UnlockLevel'];
-            } else { ?>
-                <p><b>Breed time (regular cave):</b> <?php if ($r['BreedTimeReg'] != null) {
-                        echo $r['BreedTimeReg'] . "<br/>";
+<div class="row">
+<?php    if ($dragons != null) {
+        foreach ($dragons as $r) {
+            $elements = explode(',', $r['elements']);
+            ?>
+            <div class="col-md-4">
+                <div class="text-center">
+                    <img class="eggImage" src="images/Dragons/<?php if ($r['EggImage'] != null) {
+                        echo $r['EggImage'];
                     } else {
-                        echo "Instant" . "<br/>";
-                    }; ?>
-                    <b>Breed time (upgraded):</b> <?php if ($r['BreedTimeUpgrade'] != null) {
-                        echo $r['BreedTimeUpgrade'] . "<br/>";
-                    } else {
-                        echo "N/A" . "<br/>";
-                    };
-                    if ($r['ElementIcon'] !== null) { ?>
-                    <b>Elements: </b><img class="iconSmall" src="images/Icons/<?php echo $r['ElementIcon']; ?>"
-                                          alt="<?php echo $r['ElementName'];
-                                          } ?>">
-                </p>
-            <?php } ?>
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="btn-group">
-                    <a href="dragondetail.php?dragonname=<?php echo $r['DragonName']; ?>&id=<?php echo $r['DragonID']; ?>" class="button btn btn-sm btn-outline-secondary">View</a>
-                    <?php if (isset($_SESSION['user'])) {
-                        echo '<button type="button" class="btn btn-sm btn-outline-secondary">I have it</button>';
-                    } ?>
+                        echo $r['AdultImage'];
+                    } ?>"
+                         alt="<?php echo $r['DragonName'] . " egg"; ?>">
+                    <h5><?php echo $r['DragonName']; ?></h5>
                 </div>
-                <small class="badge badge-pill badge-success">Available</small>
-            </div>
-        </div> <?php
+                <?php if ($typeid == 4 or $typeid == 5) { ?>
+                    <p><b>Unlock level:</b> <?php echo $r['UnlockLevel'];
+                } else { ?>
+                    <p><b>Breed time (regular cave):</b> <?php if ($r['BreedTimeReg'] != null) {
+                            echo $r['BreedTimeReg'] . "<br/>";
+                        } else {
+                            echo "Instant" . "<br/>";
+                        }; ?>
+                        <b>Breed time (upgraded):</b> <?php if ($r['BreedTimeUpgrade'] != null) {
+                            echo $r['BreedTimeUpgrade'] . "<br/>";
+                        } else {
+                            echo "N/A" . "<br/>";
+                        };
+                        if ($elements != null) { ?>
+                            <b>Elements: </b> <?php
+                            for ($e = 0; $e < count($elements); $e++) {
+                                echo '<img class="iconSmall" src="images/Icons/' . $elements[$e] . '" alt="' . $elements[$e] . '">';
+                            }
+                        } ?>
+                        <br/>
+                    </p>
+                <?php } ?>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="btn-group">
+                        <a href="dragondetail.php?dragonname=<?php echo $r['DragonName']; ?>&id=<?php echo $r['DragonID']; ?>"
+                           class="button btn btn-sm btn-outline-secondary">View</a>
+                        <?php if (isset($_SESSION['user'])) {
+                            echo '<button type="button" class="btn btn-sm btn-outline-secondary">I have it</button>';
+                        } ?>
+                    </div>
+                    <small class="badge badge-pill badge-success">Available</small>
+                </div>
+            </div> <?php
+        }
     }
-} else {
-    echo "Couldn't load data.";
-}
-
 }
 
 ?>
+    </div>
 
     <h1 class="blog-header"><?php $title = $typename." dragons"; echo $title;?></h1>
     <p class="blog-description"><?php echo $desc;?></p>

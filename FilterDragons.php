@@ -16,43 +16,67 @@ use \Main\db;
 
 class FilterDragons extends Dragon implements ILoadDragons
 {
+    // Attributes
+    private $_where;
+    private $_id;
+    protected $_type;
+
+    // Properties
+
+    /**
+     * @return mixed
+     */
+    public function getId()
+    {
+        return $this->_id;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getWhere()
+    {
+        return $this->_where;
+    }
+
     public function loadDragons()
     {
-        $where = '';
-        $id = null;
-        $type = null;
-
         $db = db::GetInstance();
         if (!empty($_GET['elementid'])) {
-            $id = $db::TestInput($_GET['elementid']);
-            $where = 'e.ElementID';
+            $this->_id = $db::TestInput($_GET['elementid']);
+            $this->_where = 'e.ElementID';
         }
 
         if (!empty($_GET['typeid'])) {
-            $id = db::TestInput($_GET['typeid']);
-            $where = 't.TypeID';
-            $type = $id;
+            $this->_id = db::TestInput($_GET['typeid']);
+            $this->_where = 't.TypeID';
+            $this->_type = $this->_id;
         }
 
         $sort = new Sort();
+        $page = new PagingDragons();
+
+        $startingLimit = $page->countDragons();
+        $limit = $page->getLimit();
+
         $sortitem = $sort->sortDragons();
 
-        if (!empty($type) && $type == 4 || $type == 5) {
+        if (!empty($this->_type) && $this->_type == 4 || $this->_type == 5) {
             $sql = "SELECT * FROM dragon AS d 
         JOIN dragontype AS t ON d.TypeID = t.TypeID
-        WHERE $where = :filter";
+        WHERE $this->_where = :filter";
         } else {
             $sql = "SELECT e.ElementName, e.ElementID, e.ElementNotes, GROUP_CONCAT(e.ElementIcon) as elements, d.*, de.*, t.* FROM dragon AS d 
         JOIN dragontype AS t ON d.TypeID = t.TypeID
         JOIN dragonelement AS de ON de.DragonID = d.DragonID
         JOIN element AS e ON de.ElementID = e.ElementID
-        WHERE $where = :filter
+        WHERE $this->_where = :filter
         GROUP BY de.DragonID
         ORDER BY $sortitem";
         }
 
         $query = $db -> dbc -> prepare($sql);
-        $query->bindParam(':filter', $id);
+        $query->bindParam(':filter', $this->_id);
 
         $query -> execute();
 
@@ -80,7 +104,7 @@ class FilterDragons extends Dragon implements ILoadDragons
                 $this->_typename = $data['TypeName'];
                 $this->_maxlevel = $data['MaxLevel'];
                 $this->_typeicon = $data['TypeIcon'];
-                if (!empty($_GET['typeid']) && $id < 4 || $id > 5) {
+                if (!empty($_GET['typeid']) && $this->_id < 4 || $this->_id > 5) {
                     $this->_elementid = $data['ElementID'];
                     $this->_elementname = $data['ElementName'];
                     $this->_elementnotes = $data['ElementNotes'];

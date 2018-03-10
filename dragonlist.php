@@ -3,75 +3,24 @@ $title = "Egg list";
 $desc = "List of all dragons available.";
 
 require_once 'header.php';
-require_once 'db.inc.php';
-use \Main\db;
+require_once 'LoadDragons.php';
+require_once 'LoadAllDragons.php';
+
+use \DesignPatterns\FactoryPattern\LoadDragons;
+use \DesignPatterns\FactoryPattern\LoadAllDragons;
 
 function loadDragons(){
-    $db = db::GetInstance();
-    if (!empty($_GET['sort'])) {
-        $sort = db::TestInput($_GET['sort']); // Sorting menu
-        switch ($sort) {
-            case 'ascdragons': // This DEFINITELY needs streamlining via strategy pattern or some other means; have found, however, that listing multiple rows via class wouldn't work - hence using this method instead. Will explore improvements on own time when I have access to more time and patience
-                $sql = "SELECT * FROM dragon 
-            JOIN dragonelement ON dragon.DragonID = dragonelement.DragonID
-            JOIN dragontype ON dragon.TypeID = dragontype.TypeID
-            JOIN element ON dragonelement.ElementID = element.ElementID ORDER BY DragonName";
-                break;
-            case 'descdragons':
-                $sql = "SELECT * FROM dragon 
-            JOIN dragonelement ON dragon.DragonID = dragonelement.DragonID
-            JOIN dragontype ON dragon.TypeID = dragontype.TypeID
-            JOIN element ON dragonelement.ElementID = element.ElementID ORDER BY DragonName DESC";
-                break;
-            case 'asctype':
-                $sql = "SELECT * FROM dragon 
-            JOIN dragonelement ON dragon.DragonID = dragonelement.DragonID
-            JOIN dragontype ON dragon.TypeID = dragontype.TypeID
-            JOIN element ON dragonelement.ElementID = element.ElementID ORDER BY TypeName";
-                break;
-            case 'desctype':
-                $sql = "SELECT * FROM dragon 
-            JOIN dragonelement ON dragon.DragonID = dragonelement.DragonID
-            JOIN dragontype ON dragon.TypeID = dragontype.TypeID
-            JOIN element ON dragonelement.ElementID = element.ElementID ORDER BY TypeName DESC";
-                break;
-            case 'ascelement':
-                $sql = "SELECT * FROM dragon 
-            JOIN dragonelement ON dragon.DragonID = dragonelement.DragonID
-            JOIN dragontype ON dragon.TypeID = dragontype.TypeID
-            JOIN element ON dragonelement.ElementID = element.ElementID ORDER BY ElementName";
-                break;
-            case 'descelement':
-                $sql = "SELECT * FROM dragon 
-            JOIN dragonelement ON dragon.DragonID = dragonelement.DragonID
-            JOIN dragontype ON dragon.TypeID = dragontype.TypeID
-            JOIN element ON dragonelement.ElementID = element.ElementID ORDER BY ElementName DESC";
-                break;
-            default:
-                $sql = "SELECT * FROM dragon 
-            JOIN dragonelement ON dragon.DragonID = dragonelement.DragonID
-            JOIN dragontype ON dragon.TypeID = dragontype.TypeID
-            JOIN element ON dragonelement.ElementID = element.ElementID ORDER BY DragonID";
-                break;
-        }
-    } else {
-        $sql = "SELECT * FROM dragon 
-            JOIN dragonelement ON dragon.DragonID = dragonelement.DragonID
-            JOIN dragontype ON dragon.TypeID = dragontype.TypeID
-            JOIN element ON dragonelement.ElementID = element.ElementID";
-    }
 
+    $dragonlist = new LoadDragons();
 
-    $query = $db -> dbc -> prepare($sql);
+    $dragonlist->setOutput(new LoadAllDragons());
+    $dragons = $dragonlist->loadOutput(); ?>
 
-
-    $query -> execute();
-
-    $query -> setFetchMode(PDO::FETCH_ASSOC); // [PDO::FETCH_NUM for integer key value]
-
-    $result = $query -> fetchAll();
-
-    foreach ($result as $r) { ?>
+ <div class="row">
+ <?php   if ($dragons != null) {
+    foreach ($dragons as $r) {
+        $elements = explode(',', $r['elements']);
+        ?>
         <div class="col-md-4">
         <div class="text-center">
             <img class="eggImage" src="images/Dragons/<?php if ($r['EggImage'] !=null ) {echo $r['EggImage']; } else {echo $r['AdultImage'];} ?>"
@@ -80,9 +29,12 @@ function loadDragons(){
         </div>
         <p><b>Breed time (regular cave):</b> <?php if ($r['BreedTimeReg'] != null) {echo $r['BreedTimeReg']."<br/>";} else { echo "Instant". "<br/>"; }; ?>
         <b>Breed time (upgraded):</b> <?php if ($r['BreedTimeUpgrade'] != null) {echo $r['BreedTimeUpgrade']."<br/>";} else { echo "N/A". "<br/>"; };
-            if ($r['ElementIcon'] !=null ) { ?>
-            <b>Elements: </b><img class="iconSmall" src="images/Icons/<?php echo $r['ElementIcon']; ?>" alt="<?php echo $r['ElementName']; }?>"><br/>
-        <b>Type: </b><?php if ($r['TypeIcon'] != null) { ?><img class="iconSmall" src="images/Icons/<?php echo $r['TypeIcon']; ?>" alt="<?php echo $r['ElementName']; ?>"> <?php } else {echo $r['TypeName'];} ?><br/>
+            if ($elements !=null ) { ?>
+                <b>Elements: </b> <?php
+                for ($e = 0; $e < count($elements); $e++) {
+            echo '<img class="iconSmall" src="images/Icons/'.$elements[$e].'" alt="'.$elements[$e].'">'; } }?>
+            <br/>
+        <b>Type: </b><?php if ($r['TypeIcon'] != null) { ?><img class="iconSmall" src="images/Icons/<?php echo $r['TypeIcon']; ?>" alt="<?php echo $r['TypeName']; ?>"> <?php } else {echo $r['TypeName'];} ?><br/>
             <div class="d-flex justify-content-between align-items-center">
                 <div class="btn-group">
                     <a href="dragondetail.php?dragonname=<?php echo $r['DragonName']; ?>&id=<?php echo $r['DragonID']; ?>" class="button btn btn-sm btn-outline-secondary">View</a>
@@ -94,8 +46,10 @@ function loadDragons(){
                 <small class="badge badge-pill badge-success">Available</small>
             </div>
             </div>
-        <?php }
-
+        <?php
+        }
+    }
+ echo "</div>";
 }
 
 ?>
@@ -122,10 +76,8 @@ function loadDragons(){
                 </div>
             </div>
         </div>
-        <div class="row">
             <!-- Load dragon data -->
             <?php loadDragons(); ?>
-            </div>
     </div><!-- /container -->
 
 <?php

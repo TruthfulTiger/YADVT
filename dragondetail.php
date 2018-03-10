@@ -15,10 +15,13 @@ $dragon->load($dragonid); // load from Dragon class (should explore use of strat
 $dragonname = \Main\db::TestInput($_GET['dragonname']);
 $title = $dragonname;
 $desc = $dragon->getDesc();
+$elements = explode(',', $dragon->getElements());
 
-?>
 
-<h1 class="blog-header"><?php echo $title;?></h1>
+if ($dragon->getEggimage() != null) {
+
+echo '<img class="details float-md-right" src="images/Dragons/'.$dragon->getEggimage().'" alt="'.$dragon->getDragonname().'">'; } ?>
+    <h1 class="blog-header"><?php echo $title;?></h1>
     <p class="blog-description"><?php echo $desc;?></p>
 <div class="container">
         <?php
@@ -30,21 +33,16 @@ $desc = $dragon->getDesc();
     <?php    } else if ($dragon->getElderimage() != null) {
             $maxlevel = 'N/A'; ?>
             <div class="row">
-            <div class="col-md-4">
-            <img class="details" src="images/Dragons/<?php echo $dragon->getEggimage();?>" alt="<?php echo $dragon->getDragonname().' egg'; ?>">
-            </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <img class="details" src="images/Dragons/<?php echo $dragon->getBabyimage();?>" alt="<?php echo $dragon->getDragonname().' baby'; ?>">
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <img class="details" src="images/Dragons/<?php echo $dragon->getTeenimage();?>" alt="<?php echo $dragon->getDragonname().' juvenile'; ?>">
             </div>
-         </div>
-    <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-3">
             <img class="details" src="images/Dragons/<?php echo $dragon->getAdultimage();?>" alt="<?php echo $dragon->getDragonname().' adult'; ?>">
         </div>
-        <div class="col-md-6">
+        <div class="col-md-3">
             <img class="details" src="images/Dragons/<?php echo $dragon->getElderimage();?>" alt="<?php echo $dragon->getDragonname().' elder'; ?>">
         </div>
     </div>
@@ -53,25 +51,21 @@ $desc = $dragon->getDesc();
             $maxlevel = $dragon->getMaxlevel();
             ?>
         <div class="row">
-            <div class="col-md-6">
-                <img class="details" src="images/Dragons/<?php echo $dragon->getEggimage();?>" alt="<?php echo $dragon->getDragonname().' egg'; ?>">
-            </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <img class="details" src="images/Dragons/<?php echo $dragon->getBabyimage();?>" alt="<?php echo $dragon->getDragonname().' baby'; ?>">
             </div>
-        </div>
-        <div class="row">
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <img class="details" src="images/Dragons/<?php echo $dragon->getTeenimage();?>" alt="<?php echo $dragon->getDragonname().' juvenile'; ?>">
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <img class="details" src="images/Dragons/<?php echo $dragon->getAdultimage();?>" alt="<?php echo $dragon->getDragonname().' adult'; ?>">
             </div>
         </div>
+
    <?php     }        ?>
     <table class="table table-sm table-responsive-md">
         <thead>
-        <caption>More information on <?php echo $dragon->getDragonname(); ?></caption>
+        <caption class="sr-only">More information on <?php echo $dragon->getDragonname(); ?></caption>
         </thead>
         <tbody>
         <tr>
@@ -87,6 +81,7 @@ $desc = $dragon->getDesc();
         <td><?php if ($dragon->getTypeicon() !=null) {?> <img class="iconSmall" src="images/Icons/<?php echo $dragon->getTypeicon();?>" alt="<?php echo $dragon->getTypename(); ?>"> <?php } else {echo $dragon->getTypename();} ?></td>
         </tr>
             <tr>
+                <?php if ($dragon->getEggimage() != null) {  ?>
         <th scope="row">Regular breeding time</th>
         <td><?php if ($dragon->getBreedreg() == null) {echo 'N/A';} else {echo $dragon->getBreedreg();}  ?></td>
         </tr>
@@ -98,12 +93,15 @@ $desc = $dragon->getDesc();
         <th scope="row">Incubation time</th>
         <td><?php if ($dragon->getBreedreg() == null) {echo 'N/A';} else {echo $dragon->getBreedreg();}  ?></td>
         </tr>
-        <?php if($dragon->getType() < 4 or $dragon->getType() > 5) { ?>
+        <?php if($elements !=null) { ?>
             <tr>
-                <th scope="row">Elements</th>
-                <td><img class="iconSmall" src="images/Icons/<?php echo $dragon->getElementicon();?>" alt="<?php echo $dragon->getElementname(); ?>"></td>
-            </tr>
-  <?php }?>
+                <th scope="row">Elements</th><td>
+                <?php
+                for ($e = 0; $e < count($elements); $e++) {
+                echo '<img class="iconSmall" src="images/Icons/'.$elements[$e].'" alt="'.$elements[$e].'">'; } }?>
+                </td></tr>
+  <?php }
+?>
         <?php if($dragon->getNotes() !=null ) { ?>
             <tr>
                 <th scope="row">Notes</th>

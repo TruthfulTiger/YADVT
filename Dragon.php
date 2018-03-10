@@ -13,28 +13,29 @@ use \Main\db;
 class Dragon extends ObjectProperties implements ICRUD // Most of this is to allow for being able to add dragons via front end, although load() is used for details page
 {
     // Attributes
-    private $_dragonid;
-    private $_dragonname;
-    private $_type;
-    private $_unlocklvl;
-    private $_breedreg;
-    private $_breedup;
-    private $_eggimage;
-    private $_babyimage;
-    private $_teenimage;
-    private $_adultimage;
-    private $_elderimage;
-    private $_desc;
-    private $_notes;
-    private $_elementid;
-    private $_elementname;
-    private $_elementicon;
-    private $_elementnotes;
-    private $_typeid;
-    private $_typename;
-    private $_maxlevel;
-    private $_typeicon;
-    private $_outcome;
+    protected $_dragonid;
+    protected $_dragonname;
+    protected $_type;
+    protected $_unlocklvl;
+    protected $_breedreg;
+    protected $_breedup;
+    protected $_eggimage;
+    protected $_babyimage;
+    protected $_teenimage;
+    protected $_adultimage;
+    protected $_elderimage;
+    protected $_desc;
+    protected $_notes;
+    protected $_elementid;
+    protected $_elementname;
+    protected $_elementicon;
+    protected $_elementnotes;
+    protected $_elements;
+    protected $_typeid;
+    protected $_typename;
+    protected $_maxlevel;
+    protected $_typeicon;
+    protected $_outcome;
 
     // Constructor
     public function __construct() {
@@ -146,6 +147,14 @@ class Dragon extends ObjectProperties implements ICRUD // Most of this is to all
     public function getElementnotes()
     {
         return $this->_elementnotes;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getElements()
+    {
+        return $this->_elements;
     }
 
     /**
@@ -317,6 +326,14 @@ class Dragon extends ObjectProperties implements ICRUD // Most of this is to all
     }
 
     /**
+     * @param mixed $elements
+     */
+    public function setElements($elements): void
+    {
+        $this->_elements = $elements;
+    }
+
+    /**
      * @param mixed $maxlevel
      */
     public function setMaxlevel($maxlevel)
@@ -401,18 +418,18 @@ class Dragon extends ObjectProperties implements ICRUD // Most of this is to all
     public function load($id)
     {
         $db = db::GetInstance();
-        $data = array();
 
         if ($id >= 11 and $id <= 14) {
             $sql = "SELECT * FROM dragon AS d 
                 JOIN dragontype AS t ON d.TypeID = t.TypeID
                 WHERE d.DragonID= :dragon";
         }  else {
-            $sql = "SELECT * FROM dragon AS d 
+            $sql = "SELECT e.ElementName, e.ElementID, e.ElementNotes, GROUP_CONCAT(e.ElementIcon) as elements, d.*, de.*, t.* FROM dragon AS d 
                 JOIN dragontype AS t ON d.TypeID = t.TypeID
                 JOIN dragonelement AS de ON de.DragonID = d.DragonID
-                JOIN element AS e ON de.ElementID = e.ElementID
-                WHERE d.DragonID= :dragon";
+                JOIN element AS e ON de.ElementID = e.ElementID              
+                WHERE d.DragonID= :dragon
+                GROUP BY de.DragonID";
         }
 
         $query = $db -> dbc -> prepare($sql);
@@ -424,32 +441,38 @@ class Dragon extends ObjectProperties implements ICRUD // Most of this is to all
 
         $result = $query->fetchAll();
 
-        foreach ($result as $data) {
-            $this->_dragonid = $data['DragonID'];
-            $this->_dragonname = $data['DragonName'];
-            $this->_type = $data['TypeID'];
-            $this->_unlocklvl = $data['UnlockLevel'];
-            $this->_breedreg = $data['BreedTimeReg'];
-            $this->_breedup = $data['BreedTimeUpgrade'];
-            $this->_eggimage = $data['EggImage'];
-            $this->_babyimage = $data['BabyImage'];
-            $this->_teenimage = $data['TeenImage'];
-            $this->_adultimage = $data['AdultImage'];
-            $this->_elderimage = $data['ElderImage'];
-            $this->_desc = $data['Description'];
-            $this->_notes = $data['Notes'];
-            $this->_typeid = $data['TypeID'];
-            $this->_typename = $data['TypeName'];
-            $this->_maxlevel = $data['MaxLevel'];
-            $this->_typeicon = $data['TypeIcon'];
-            if ($id < 11 or $id > 14) {
-                $this->_elementid = $data['ElementID'];
-                $this->_elementname = $data['ElementName'];
-                $this->_elementicon = $data['ElementIcon'];
-                $this->_elementnotes = $data['ElementNotes'];
+        if ($result) {
+            foreach ($result as $data) {
+                $this->_dragonid = $data['DragonID'];
+                $this->_dragonname = $data['DragonName'];
+                $this->_type = $data['TypeID'];
+                $this->_unlocklvl = $data['UnlockLevel'];
+                $this->_breedreg = $data['BreedTimeReg'];
+                $this->_breedup = $data['BreedTimeUpgrade'];
+                $this->_eggimage = $data['EggImage'];
+                $this->_babyimage = $data['BabyImage'];
+                $this->_teenimage = $data['TeenImage'];
+                $this->_adultimage = $data['AdultImage'];
+                $this->_elderimage = $data['ElderImage'];
+                $this->_desc = $data['Description'];
+                $this->_notes = $data['Notes'];
+                $this->_typeid = $data['TypeID'];
+                $this->_typename = $data['TypeName'];
+                $this->_maxlevel = $data['MaxLevel'];
+                $this->_typeicon = $data['TypeIcon'];
+                if ($id < 11 or $id > 14) {
+                    $this->_elementid = $data['ElementID'];
+                    $this->_elementname = $data['ElementName'];
+                 //   $this->_elementicon = $data['ElementIcon'];
+                    $this->_elementnotes = $data['ElementNotes'];
+                    $this->_elements = $data['elements'];
+                }
+                return $data;
             }
+        } else {
+            echo "No results found.";
+            return null;
         }
-        return $data;
     }
 
     public function insertRecord()

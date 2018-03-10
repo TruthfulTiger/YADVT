@@ -5,6 +5,11 @@ $desc = "";
 
 require_once 'header.php';
 require_once 'db.inc.php';
+require_once 'LoadDragons.php';
+require_once 'SearchDragons.php';
+
+use \DesignPatterns\FactoryPattern\LoadDragons;
+use \DesignPatterns\FactoryPattern\SearchDragons;
 use \Main\db;
 
 $title = $title.db::TestInput($_POST['searchname']);
@@ -26,34 +31,29 @@ $title = $title.db::TestInput($_POST['searchname']);
 <?php
 
 function loadDragons(){
-    $searchname = db::TestInput($_POST['searchname']);
-    $db = db::GetInstance();
 
-    $sql = "SELECT * FROM dragon AS d WHERE DragonName LIKE :dragon";
+    $dragonlist = new LoadDragons();
 
-    $query = $db -> dbc -> prepare($sql);
+    $dragonlist->setOutput(new SearchDragons());
+    $dragons = (array)$dragonlist->loadOutput();
 
-    $search = '%'.$searchname.'%'; // Because bound parameters don't accept wildcards
-
-    $query->bindParam(':dragon', $search);
-
-    $query -> execute();
-
-    $query -> setFetchMode(PDO::FETCH_ASSOC); // [PDO::FETCH_NUM for integer key value]
-
-    $result = $query -> fetchAll();
-    if ($result) {
-        foreach ($result as $r) {
+    if ($dragons != null) {
+        foreach ($dragons as $r) {
             ?>
             <div class="col-md-4">
                 <div class="text-center">
-                    <img class="eggImage" src="images/Dragons/<?php if ($r['EggImage'] !=null ) {echo $r['EggImage']; } else {echo $r['AdultImage'];}?>"
+                    <img class="eggImage" src="images/Dragons/<?php if ($r['EggImage'] != null) {
+                        echo $r['EggImage'];
+                    } else {
+                        echo $r['AdultImage'];
+                    } ?>"
                          alt="<?php echo $r['DragonName'] . " egg"; ?>">
                     <h5><?php echo $r['DragonName']; ?></h5>
                 </div>
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="btn-group">
-                        <a href="dragondetail.php?dragonname=<?php echo $r['DragonName']; ?>&id=<?php echo $r['DragonID']; ?>" class="button btn btn-sm btn-outline-secondary">View</a>
+                        <a href="dragondetail.php?dragonname=<?php echo $r['DragonName']; ?>&id=<?php echo $r['DragonID']; ?>"
+                           class="button btn btn-sm btn-outline-secondary">View</a>
 
                         <?php if (isset($_SESSION['user'])) {
                             echo '<button type="button" class="btn btn-sm btn-outline-secondary">I have it</button>';
@@ -63,8 +63,6 @@ function loadDragons(){
                 </div>
             </div>
         <?php }
-    } else {
-        echo "No results found for ".$searchname;
     }
 }
 

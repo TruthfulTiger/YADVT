@@ -6,69 +6,24 @@ $desc = "";
 
 require_once 'header.php';
 require_once 'db.inc.php';
+require_once 'LoadDragons.php';
+require_once 'FilterDragons.php';
+
+use \DesignPatterns\FactoryPattern\LoadDragons;
+use \DesignPatterns\FactoryPattern\FilterDragons;
 use \Main\db;
 
 $elementname = db::TestInput($_GET['element']);
 function loadDragons(){
-    $db = db::GetInstance();
-    $elementid = $db::TestInput($_GET['elementid']);
-    if (!empty($_GET['sort'])) {
-        $sort = $db::TestInput($_GET['sort']);
-        switch ($sort) {
-            case 'ascdragons':
-                $sql = "SELECT * FROM dragon AS d 
-            JOIN dragontype AS t ON d.TypeID = t.TypeID
-            JOIN dragonelement AS de ON de.DragonID = d.DragonID
-            JOIN element AS e ON de.ElementID = e.ElementID
-            WHERE e.ElementID= :element ORDER BY d.DragonName";
-                break;
-            case 'descdragons':
-                $sql = "SELECT * FROM dragon AS d 
-            JOIN dragontype AS t ON d.TypeID = t.TypeID
-            JOIN dragonelement AS de ON de.DragonID = d.DragonID
-            JOIN element AS e ON de.ElementID = e.ElementID
-            WHERE e.ElementID= :element ORDER BY d.DragonName DESC ";
-                break;
-            case 'asctype':
-                $sql = "SELECT * FROM dragon AS d 
-            JOIN dragontype AS t ON d.TypeID = t.TypeID
-            JOIN dragonelement AS de ON de.DragonID = d.DragonID
-            JOIN element AS e ON de.ElementID = e.ElementID
-            WHERE e.ElementID= :element ORDER BY t.TypeName";
-                break;
-            case 'desctype':
-                $sql = "SELECT * FROM dragon AS d 
-            JOIN dragontype AS t ON d.TypeID = t.TypeID
-            JOIN dragonelement AS de ON de.DragonID = d.DragonID
-            JOIN element AS e ON de.ElementID = e.ElementID
-            WHERE e.ElementID= :element ORDER BY t.TypeName DESC";
-                break;
-            default:
-                $sql = "SELECT * FROM dragon AS d 
-            JOIN dragontype AS t ON d.TypeID = t.TypeID
-            JOIN dragonelement AS de ON de.DragonID = d.DragonID
-            JOIN element AS e ON de.ElementID = e.ElementID
-            WHERE e.ElementID= :element ORDER BY d.DragonID";
-                break;
-        }
-    } else {
-        $sql = "SELECT * FROM dragon AS d 
-            JOIN dragontype AS t ON d.TypeID = t.TypeID
-            JOIN dragonelement AS de ON de.DragonID = d.DragonID
-            JOIN element AS e ON de.ElementID = e.ElementID
-            WHERE e.ElementID= :element";
-    }
 
-    $query = $db -> dbc -> prepare($sql);
-    $query->bindParam(':element', $elementid);
+    $dragonlist = new LoadDragons();
 
-    $query -> execute();
-
-    $query -> setFetchMode(PDO::FETCH_ASSOC); // [PDO::FETCH_NUM for integer key value]
-
-    $result = $query -> fetchAll();
-    if ($result) {
-        foreach ($result as $r) {
+    $dragonlist->setOutput(new FilterDragons());
+    $dragons = (array)$dragonlist->loadOutput(); ?>
+<div class="row">
+<?php
+    if ($dragons != null) {
+        foreach ($dragons as $r) {
             ?>
             <div class="col-md-4">
                 <div class="text-center">
@@ -90,30 +45,32 @@ function loadDragons(){
                     } else {
                         echo "N/A" . "<br/>";
                     }; ?>
-                    <b>Elements: </b><img class="iconSmall" src="images/Icons/<?php echo $r['ElementIcon']; ?>"
-                                          alt="<?php echo $r['ElementName'];
-                                           ?>"><br/>
-                    <b>Type: </b><?php if ($r['TypeIcon'] != null) { ?><img class="iconSmall" src="images/Icons/<?php echo $r['TypeIcon']; ?>" alt="<?php echo $r['TypeName']; ?>"> <?php } else {echo $r['TypeName'];} ?><br/>
+
+                    <b>Type: </b><?php if ($r['TypeIcon'] != null) { ?><img class="iconSmall"
+                                                                            src="images/Icons/<?php echo $r['TypeIcon']; ?>"
+                                                                            alt="<?php echo $r['TypeName']; ?>"> <?php } else {
+                        echo $r['TypeName'];
+                    } ?><br/>
                 </p>
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="btn-group">
-                        <a href="dragondetail.php?dragonname=<?php echo $r['DragonName']; ?>&id=<?php echo $r['DragonID']; ?>" class="button btn btn-sm btn-outline-secondary">View</a>
+                        <a href="dragondetail.php?dragonname=<?php echo $r['DragonName']; ?>&id=<?php echo $r['DragonID']; ?>"
+                           class="button btn btn-sm btn-outline-secondary">View</a>
                         <?php if (isset($_SESSION['user'])) {
                             echo '<button type="button" class="btn btn-sm btn-outline-secondary">I have it</button>';
                         } ?>
                     </div>
                     <small class="badge badge-pill badge-success">Available</small>
                 </div>
-            </div> <?php
+            </div>
+            <?php
         }
-    } else {
-        echo "No results found.";
+
     }
-
-
 }
 
 ?>
+    </div>
 
     <h1 class="blog-header"><?php $title = $elementname." dragons"; echo $title;?></h1>
     <p class="blog-description"><?php echo $desc;
